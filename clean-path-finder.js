@@ -6,9 +6,9 @@
 
 let Stack = require('stackjs')
 let stack = new Stack()
-let visitedSpace = []         // Robot visited grid for path calcularion. 0=not cleaned, 1=cleaned
+var visitedSpace = []         // Robot visited grid for path calcularion. 0=not cleaned, 1=cleaned
 let spacesVisited = 0         // Spaces visited counter
-let finalSolution = []        // Robot path for the cleaning job
+var finalSolution = []        // Robot path for the cleaning job
 
 // Simple path-finder algorithm:
 // From the actual position will look for cleanable space UP, RIGHT, LEFT and DOWN.
@@ -101,6 +101,9 @@ function calculate(totalSpacesToClean, grid, gridLines, gridCols, actualPosition
 
     console.log('Starting path calc. Total spaces to clean: ' + totalSpacesToClean)
     spacesVisited = 0
+    while (! stack.isEmpty()) {      // Empty Stack
+      stack.pop();
+    }
     walk(totalSpacesToClean, grid, gridLines, gridCols, actualPositionLine, actualPositionCol) 
     console.log('Finished path calc. Total path steps: ' + finalSolution.length)
 

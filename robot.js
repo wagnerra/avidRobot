@@ -17,7 +17,7 @@ let client = new WebSocketClient();
 const SERVER_URL = process.env.SERVER_URL;
 
 // Status update frequency
-let statusUpdateFreq = 5000;     // 5 seconds when on READY state and 200 ms when cleaning
+let statusUpdateFreq = 2000;     // 2 seconds when on READY state and 200 ms when cleaning
 
 // Identify the Robot in field. Example: ROBOT001
 const ROBOT_SERIAL_NUMBER = process.env.ROBOT_SERIAL_NUMBER;
@@ -29,9 +29,9 @@ const argv = require('yargs')
   .demand(1)
   .argv
 
-let grid = []           // (X, Y) matrix where 1 means space to clean and 0 means wall.
-let cleanPath = []      // Path to be followed by Robot in format {li:1, co:2}
-let gridStatus = []     // (X, Y) matrix where 1 means space not cleaned, 2 space already cleaned, 0 for walls
+var grid = []           // (X, Y) matrix where 1 means space to clean and 0 means wall.
+var cleanPath = []      // Path to be followed by Robot in format {li:1, co:2}
+var gridStatus = []     // (X, Y) matrix where 1 means space not cleaned, 2 space already cleaned, 0 for walls
 let totalSpacesToClean = 0  // Total number of spaces to be cleaned
 let actualPositionLine = -1   // actual robot line
 let actualPositionCol = -1    // actual robot col
@@ -122,9 +122,9 @@ client.on('connect', function(connection) {
     function sendRobotState() {
         if (connection.connected) {
             let mapData = {
-                type: 'robot-state',
+                type: 'robot-data',
                 robotSN: ROBOT_SERIAL_NUMBER,
-                status: status,
+                status: 'STARTED',
                 currentLine: actualPositionLine,
                 currentCol: actualPositionCol,
                 spacesToClean: totalSpacesToClean,
@@ -149,13 +149,14 @@ client.on('connect', function(connection) {
                     type: 'robot-data',
                     robotSN: ROBOT_SERIAL_NUMBER,
                     status: status,
-                    startLine: actualPositionLine,
-                    startCol: actualPositionCol,
+                    currentLine: actualPositionLine,
+                    currentCol: actualPositionCol,
                     spacesToClean: totalSpacesToClean,
                     lines: gridLines,
                     cols: gridCols,
+                    cleaned: spacesCleaned,
                     timestamp: Date.now(),
-                    grid: grid
+                    gridStatus: gridStatus
                 }
                 connection.sendUTF(JSON.stringify(mapData))
                 status = 'CLEANING'
@@ -177,7 +178,7 @@ client.on('connect', function(connection) {
                 connection.sendUTF(JSON.stringify(mapData))
                 if (status === 'FINISHED') {
                     status = 'READY'
-                    statusUpdateFreq = 5000    // 5 seconds
+                    statusUpdateFreq = 2000    // 2 seconds
                 }
             }
             setTimeout(sendStatus, statusUpdateFreq)
@@ -226,7 +227,7 @@ function startClean() {
     spacesCleaned = 0
     gridStatus = []
     for (let entry of grid) {
-        gridStatus.push(entry)
+        gridStatus.push(Array.from(entry))    // Deep clone
     }
     unitSpaceClean();
 }
