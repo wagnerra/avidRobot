@@ -4,6 +4,11 @@
 // SW Development Challenge
 // Author: Wagner Correa Ramos
 
+// Robot state machine diagram:
+// READY->STARTED->CLEANING->FINISHED->READY
+
+// TODO: Implement STOPPED state
+
 let WebSocketClient = require('websocket').client;
  
 let client = new WebSocketClient();
@@ -45,14 +50,14 @@ function readFile() {
 
 // Mount a (X,Y) grid where 1 means space to clean and 0 means walls.
 function mountGrid(mapLines) {
-    var grid = []
-    var line = 0
+    let grid = []
+    let line = 0
 
     mapLines.forEach(element => {
     if (element.trim().length > 0) {
         console.log('Processing ' + element);
         if (grid[line] === undefined) grid[line] = [];
-        for (var col = 0; col < element.length; col++) {
+        for (let col = 0; col < element.length; col++) {
             if (element.charAt(col) === '#') {
                 grid[line][col] = 0     // wall
             }
@@ -103,16 +108,44 @@ client.on('connect', function(connection) {
                     startClean();
                 }
             }
+            else 
+            if (message.utf8Data === 'SELECT') {
+                sendRobotState()
+            }
+            else {
+                console.log('Unknow received command: ' + message.utf8Data);
+            }
         }
     });
     
+    // Send actual robot full state to central server
+    function sendRobotState() {
+        if (connection.connected) {
+            let mapData = {
+                type: 'robot-state',
+                robotSN: ROBOT_SERIAL_NUMBER,
+                status: status,
+                currentLine: actualPositionLine,
+                currentCol: actualPositionCol,
+                spacesToClean: totalSpacesToClean,
+                lines: gridLines,
+                cols: gridCols,
+                cleaned: spacesCleaned,
+                timestamp: Date.now(),
+                gridStatus: gridStatus
+            }
+            connection.sendUTF(JSON.stringify(mapData))
+        }
+    }
+
+    // Send actual robot status to central server
     function sendStatus() {
         if (connection.connected) {
             // Send status message to web panel 
             // Message format example:
             // ROBOT001 READY 1,2 0
             if (status === 'STARTED') {
-                var mapData = {
+                let mapData = {
                     type: 'robot-data',
                     robotSN: ROBOT_SERIAL_NUMBER,
                     status: status,
@@ -129,9 +162,9 @@ client.on('connect', function(connection) {
                 statusUpdateFreq = 200      // Fast updates to show robot path
             }
             else {
-                var mapData = {
+                let mapData = {
                     type: 'robot-clean',
-                    robotSN: robotSerialNumber,
+                    robotSN: ROBOT_SERIAL_NUMBER,
                     status: status,
                     currentLine: actualPositionLine,
                     currentCol: actualPositionCol,
@@ -165,7 +198,7 @@ function run() {
     connectServer()
 }
 
-// Do a unit space cleaning and after cleaned go to next space until finished
+// Do a unit space clean and after cleaned go to next space until finished
 function unitSpaceClean() {
     if (cleaningStep < cleanPath.length) {
         actualPositionLine = cleanPath[cleaningStep].li;
