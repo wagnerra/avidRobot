@@ -40,6 +40,7 @@ let cleaningStep = 0;   // Actual robot step inside clean path
 let spacesCleaned = 0   // Count already cleaned spaces
 let gridLines = 0       // Number of lines of grid
 let gridCols = 0        // Number of cols of grid
+let startedTimestamp = Date.now()    // Clean job start timestamp
 
 // Read clean map with line breaks or \n char sequence to mean line break
 function readFile() {
@@ -128,10 +129,12 @@ client.on('connect', function(connection) {
                 currentLine: actualPositionLine,
                 currentCol: actualPositionCol,
                 spacesToClean: totalSpacesToClean,
+                cleaningStep: cleaningStep,
                 lines: gridLines,
                 cols: gridCols,
                 cleaned: spacesCleaned,
                 timestamp: Date.now(),
+                startedTimestamp: startedTimestamp,
                 gridStatus: gridStatus
             }
             connection.sendUTF(JSON.stringify(mapData))
@@ -152,10 +155,12 @@ client.on('connect', function(connection) {
                     currentLine: actualPositionLine,
                     currentCol: actualPositionCol,
                     spacesToClean: totalSpacesToClean,
+                    cleaningStep: cleaningStep,
                     lines: gridLines,
                     cols: gridCols,
                     cleaned: spacesCleaned,
                     timestamp: Date.now(),
+                    startedTimestamp: startedTimestamp,
                     gridStatus: gridStatus
                 }
                 connection.sendUTF(JSON.stringify(mapData))
@@ -170,10 +175,12 @@ client.on('connect', function(connection) {
                     currentLine: actualPositionLine,
                     currentCol: actualPositionCol,
                     spacesToClean: totalSpacesToClean,
+                    cleaningStep: cleaningStep,
                     lines: gridLines,
                     cols: gridCols,
                     cleaned: spacesCleaned,
-                    timestamp: Date.now()
+                    timestamp: Date.now(),
+                    startedTimestamp: startedTimestamp
                 }
                 connection.sendUTF(JSON.stringify(mapData))
                 if (status === 'FINISHED') {
@@ -222,6 +229,7 @@ function unitSpaceClean() {
 function startClean() {
     console.log('Starting clean process');
     status = 'STARTED'
+    startedTimestamp = Date.now()
     cleanPath = CleanPathFinder.calculate(totalSpacesToClean, grid, gridLines, gridCols, actualPositionLine, actualPositionCol)
     cleaningStep = 0
     spacesCleaned = 0
